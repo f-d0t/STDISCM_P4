@@ -4,6 +4,9 @@ from typing import List
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+# to run
+# uvicorn course_service:app --reload --port 8001
+
 
 # DATABASE SETUP
 DATABASE_URL = "sqlite:///./courses.db"
