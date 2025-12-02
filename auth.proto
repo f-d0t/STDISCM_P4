@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package auth;
+
+// --- Request/Response Messages ---
+
+// 1. Login RPC
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string token_type = 2; // "bearer"
+  string role = 3;
+}
+
+// 2. Verify Token RPC
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse {
+  bool valid = 1;
+  string username = 2;
+  string role = 3;
+}
+
+// 3. Create Account RPC
+message CreateAccountRequest {
+  string username = 1;
+  string password = 2;
+  // CHANGED: The 'role' is now required (not optional) 
+  // and must be explicitly set by the client (e.g., "student" or "faculty").
+  string role = 3; 
+}
+
+message CreateAccountResponse {
+  bool success = 1;
+  string message = 2;
+  string role = 3;
+}
+
+// --- Service Definition ---
+service AuthService {
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
+  
+  // RPC for user registration
+  rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse); 
+}

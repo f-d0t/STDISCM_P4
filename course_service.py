@@ -1,16 +1,22 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List
+import grpc
+import time
+from concurrent import futures
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.exc import IntegrityError
 
-# pip install fastapi uvicorn sqlalchemy pydantic
-# to run
-# uvicorn course_service:app --reload --port 8001
+# IMPORTANT: These imports rely on the generated gRPC files.
+# Make sure you run the compilation command:
+# python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. auth.proto course.proto
+import course_pb2
+import course_pb2_grpc
+
 
 
 # DATABASE SETUP
+
 DATABASE_URL = "sqlite:///./courses.db"
+GRPC_PORT = "8001" # This node runs on port 8001
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
@@ -27,89 +33,140 @@ class Course(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# --- gRPC Servicer Implementation ---
 
-# FASTAPI APP
-app = FastAPI(title="Course Service")
+# The CourseServicer must inherit from the generated ServiceBase class
+class CourseServicer(course_pb2_grpc.CourseServiceServicer):
+    """Implements the Course Service defined in course.proto."""
+
+    def ListCourses(self, request, context):
+        """Lists all open courses."""
+        db = SessionLocal()
+        try:
+            # Filter for open courses
+            courses_db = db.query(Course).filter(Course.is_open == True).all()
+            
+            # Map SQLAlchemy objects to gRPC Course message objects
+            courses_grpc = [
+                course_pb2.Course(
+                    id=c.id,
+                    code=c.code,
+                    title=c.title,
+                    slots=c.slots,
+                    is_open=c.is_open
+                ) for c in courses_db
+            ]
+            
+            # Return the structured gRPC response
+            return course_pb2.ListCoursesResponse(courses=courses_grpc)
+        finally:
+            db.close()
 
 
-# SCHEMAS
-class CourseCreate(BaseModel):
-    code: str
-    title: str
-    slots: int
+    def AddCourse(self, request, context):
+        """Adds a new course to the database."""
+        db = SessionLocal()
+        try:
+            # Check for existing course code before attempting to add
+            existing = db.query(Course).filter(Course.code == request.code).first()
+            if existing:
+                context.set_code(grpc.StatusCode.ALREADY_EXISTS)
+                context.set_details("Course with this code already exists")
+                return course_pb2.AddCourseResponse()
 
-class CourseOut(BaseModel):
-    id: int
-    code: str
-    title: str
-    slots: int
-    is_open: bool
+            new_course = Course(
+                code=request.code,
+                title=request.title,
+                slots=request.slots,
+                is_open=True
+            )
 
-    class Config:
-        orm_mode = True
+            db.add(new_course)
+            db.commit()
+            db.refresh(new_course)
 
+            # Return the new course as a gRPC Course message
+            return course_pb2.AddCourseResponse(
+                course=course_pb2.Course(
+                    id=new_course.id,
+                    code=new_course.code,
+                    title=new_course.title,
+                    slots=new_course.slots,
+                    is_open=new_course.is_open
+                )
+            )
+        finally:
+            db.close()
 
-# API ENDPOINTS
-@app.get("/")
-def health_check():
-    return {"status": "Course Service running"}
+    def CloseCourse(self, request, context):
+        """Closes a course, setting is_open to False."""
+        db = SessionLocal()
+        try:
+            course = db.query(Course).filter(Course.id == request.course_id).first()
 
-@app.get("/courses", response_model=List[CourseOut])
-def list_courses():
-    db = SessionLocal()
-    courses = db.query(Course).filter(Course.is_open == True).all()
-    db.close()
-    return courses
+            if not course:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"Course ID {request.course_id} not found")
+                return course_pb2.OperationResponse(success=False)
 
-@app.post("/courses", response_model=CourseOut)
-def add_course(course: CourseCreate):
-    db = SessionLocal()
+            course.is_open = False
+            db.commit()
 
-    existing = db.query(Course).filter(Course.code == course.code).first()
-    if existing:
-        db.close()
-        raise HTTPException(status_code=400, detail="Course already exists")
+            return course_pb2.OperationResponse(
+                success=True,
+                message=f"Course ID {request.course_id} closed successfully."
+            )
+        finally:
+            db.close()
 
-    new_course = Course(
-        code=course.code,
-        title=course.title,
-        slots=course.slots,
-        is_open=True
-    )
+    def UpdateSlots(self, request, context):
+        """Updates the number of available slots for a course."""
+        db = SessionLocal()
+        try:
+            course = db.query(Course).filter(Course.id == request.course_id).first()
 
-    db.add(new_course)
-    db.commit()
-    db.refresh(new_course)
-    db.close()
+            if not course:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"Course ID {request.course_id} not found")
+                return course_pb2.OperationResponse(success=False)
 
-    return new_course
+            if request.new_slots < 0:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Slots cannot be negative")
+                return course_pb2.OperationResponse(success=False)
 
-@app.put("/courses/{course_id}/close")
-def close_course(course_id: int):
-    db = SessionLocal()
-    course = db.query(Course).filter(Course.id == course_id).first()
+            course.slots = request.new_slots
+            db.commit()
 
-    if not course:
-        db.close()
-        raise HTTPException(status_code=404, detail="Course not found")
+            return course_pb2.OperationResponse(
+                success=True,
+                message=f"Slots for Course ID {request.course_id} updated to {request.new_slots}."
+            )
+        finally:
+            db.close()
 
-    course.is_open = False
-    db.commit()
-    db.close()
+# --- gRPC Server Startup ---
 
-    return {"message": "Course closed"}
+def serve():
+    """Starts the gRPC server for the Course Service."""
+    # Use a ThreadPoolExecutor to handle concurrent requests
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    
+    # Add the implemented servicer to the server
+    course_pb2_grpc.add_CourseServiceServicer_to_server(CourseServicer(), server)
 
-@app.put("/courses/{course_id}/slots/{new_slots}")
-def update_slots(course_id: int, new_slots: int):
-    db = SessionLocal()
-    course = db.query(Course).filter(Course.id == course_id).first()
+    bind_address = f'[::]:{GRPC_PORT}'
+    server.add_insecure_port(bind_address)
+    print(f"Course Service server starting on {bind_address}")
+    server.start()
 
-    if not course:
-        db.close()
-        raise HTTPException(status_code=404, detail="Course not found")
+    try:
+        # Keep the main thread alive for the server
+        while True:
+            time.sleep(86400) # Sleep for a long time
+    except KeyboardInterrupt:
+        print("Stopping Course Service server...")
+        server.stop(0)
 
-    course.slots = new_slots
-    db.commit()
-    db.close()
-
-    return {"message": "Slots updated"}
+if __name__ == '__main__':
+    serve()

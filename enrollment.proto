@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package enrollment;
+
+// --- Data Messages ---
+
+// Represents a student's grade in a single course
+message GradeRecord {
+  int32 enrollment_id = 1;
+  int32 course_id = 2;
+  string course_code = 3;
+  string course_title = 4;
+  string student_username = 5;
+  optional float grade = 6; // Optional: Grade might not be assigned yet
+  string status = 7;         // e.g., "ENROLLED", "COMPLETED"
+}
+
+// --- Request/Response Messages ---
+
+// 1. Enrollment RPC
+message EnrollRequest {
+  string student_username = 1;
+  int32 course_id = 2;
+}
+
+// Response for simple enrollment operation
+message EnrollResponse {
+  bool success = 1;
+  string message = 2;
+  int32 enrollment_id = 3;
+}
+
+// 2. View Grades/Schedule RPC (Student feature)
+message ViewGradesRequest {
+  string student_username = 1;
+}
+
+message ViewGradesResponse {
+  repeated GradeRecord records = 1;
+}
+
+// 3. Upload Grade RPC (Faculty feature)
+message UploadGradeRequest {
+  string faculty_username = 1; // Used for authorization check
+  int32 enrollment_id = 2;
+  float grade = 3;      
+}
+
+// Response for simple upload operation
+message UploadGradeResponse {
+  bool success = 1;
+  string message = 2;
+  float updated_grade = 3;
+}
+
+// --- Service Definition ---
+service EnrollmentService {
+  // Students to enroll in an open course
+  rpc Enroll (EnrollRequest) returns (EnrollResponse);
+  
+  // Students to view their schedule and grades
+  rpc ViewGrades (ViewGradesRequest) returns (ViewGradesResponse);
+  
+  // Faculty to upload a final grade for a student
+  rpc UploadGrade (UploadGradeRequest) returns (UploadGradeResponse);
+}

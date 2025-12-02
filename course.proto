@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package course;
+
+// Message structure for a Course object
+message Course {
+  int32 id = 1;
+  string code = 2;
+  string title = 3;
+  int32 slots = 4;
+  bool is_open = 5;
+}
+
+// Message for listing courses
+message ListCoursesRequest {
+  // Empty request, but required for gRPC method signature
+}
+
+message ListCoursesResponse {
+  repeated Course courses = 1;
+}
+
+// Message for adding a new course
+message AddCourseRequest {
+  string code = 1;
+  string title = 2;
+  int32 slots = 3;
+}
+
+message AddCourseResponse {
+  Course course = 1;
+}
+
+// Message for closing a course
+message CloseCourseRequest {
+  int32 course_id = 1;
+}
+
+// Message for updating slots
+message UpdateSlotsRequest {
+  int32 course_id = 1;
+  int32 new_slots = 2;
+}
+
+// Generic response for simple operations (closing/updating)
+message OperationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// The Course Management Service definition
+service CourseService {
+  rpc ListCourses (ListCoursesRequest) returns (ListCoursesResponse);
+  rpc AddCourse (AddCourseRequest) returns (AddCourseResponse);
+  rpc CloseCourse (CloseCourseRequest) returns (OperationResponse);
+  rpc UpdateSlots (UpdateSlotsRequest) returns (OperationResponse);
+}
