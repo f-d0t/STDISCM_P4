@@ -8,12 +8,12 @@ from datetime import datetime
 from starlette.middleware.cors import CORSMiddleware
 
 # IMPORTANT: Import generated gRPC code and protobuf messages
-import auth_pb2
-import auth_pb2_grpc
-import course_pb2
-import course_pb2_grpc
-import enrollment_pb2
-import enrollment_pb2_grpc
+from client import auth_pb2
+from client import auth_pb2_grpc
+from client import course_pb2
+from client import course_pb2_grpc
+from client import enrollment_pb2
+from client import enrollment_pb2_grpc
 
 # to run:
 # uvicorn view_gateway:app --reload --port 8888

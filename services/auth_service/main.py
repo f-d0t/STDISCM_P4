@@ -10,8 +10,8 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Import generated gRPC code
-import auth_pb2
-import auth_pb2_grpc
+from client import auth_pb2
+from client import auth_pb2_grpc
 
 # Make sure to run the compilation command:
 # python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. auth.proto course.proto
@@ -33,7 +33,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # DATABASE SETUP
 
-DATABASE_URL = "sqlite:///./auth.db"
+DATABASE_URL = "sqlite:///./services/auth_service/auth.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False}) 
 SessionLocal = sessionmaker(bind=engine)

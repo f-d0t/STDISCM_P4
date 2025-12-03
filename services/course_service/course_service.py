@@ -8,14 +8,14 @@ from sqlalchemy.exc import IntegrityError
 # IMPORTANT: These imports rely on the generated gRPC files.
 # Make sure you run the compilation command:
 # python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. auth.proto course.proto
-import course_pb2
-import course_pb2_grpc
+from client import course_pb2
+from client import course_pb2_grpc
 
 
 
 # DATABASE SETUP
 
-DATABASE_URL = "sqlite:///./courses.db"
+DATABASE_URL = "sqlite:///./services/course_service/courses.db"
 GRPC_PORT = "8001" # This node runs on port 8001
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

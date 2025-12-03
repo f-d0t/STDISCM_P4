@@ -58,9 +58,9 @@ service EnrollmentService {
   // Students to enroll in an open course
   rpc Enroll (EnrollRequest) returns (EnrollResponse);
   
-  // Students to view their schedule and grades
+  // Students to view their previous grades
   rpc ViewGrades (ViewGradesRequest) returns (ViewGradesResponse);
   
-  // Faculty to upload a final grade for a student
+  // Faculty to be able to upload grades
   rpc UploadGrade (UploadGradeRequest) returns (UploadGradeResponse);
 }

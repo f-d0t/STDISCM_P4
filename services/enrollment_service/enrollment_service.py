@@ -5,16 +5,16 @@ from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float # 
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Import generated gRPC code
-import enrollment_pb2
-import enrollment_pb2_grpc
+from client import enrollment_pb2
+from client import enrollment_pb2_grpc
 # Import Course gRPC client necessities for inter-service communication
-import course_pb2
-import course_pb2_grpc 
+from client import course_pb2
+from client import course_pb2_grpc 
 
 
 # CONFIG
 
-DATABASE_URL = "sqlite:///./enrollment.db"
+DATABASE_URL = "sqlite:///./services/enrollment_service/enrollment.db"
 GRPC_PORT = "8002" # This node runs on port 8002
 COURSE_SERVICE_ADDRESS = 'localhost:8001' # Address of the Course Node
 

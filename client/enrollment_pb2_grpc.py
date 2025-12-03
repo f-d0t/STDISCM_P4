@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import enrollment_pb2 as enrollment__pb2
+from . import enrollment_pb2 as enrollment__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
@@ -64,14 +64,14 @@ class EnrollmentServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ViewGrades(self, request, context):
-        """Students to view their schedule and grades
+        """Students to view their previous grades
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UploadGrade(self, request, context):
-        """Faculty to upload a final grade for a student
+        """Faculty to be able to upload grades
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

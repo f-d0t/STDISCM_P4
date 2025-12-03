@@ -1,0 +1,10 @@
+# FastAPI web framework
+fastapi
+# ASGI server to run FastAPI
+uvicorn
+# Dependencies for the REST-to-gRPC connections
+grpcio
+# For handling JWTs passed from the client (Authentication/Authorization)
+python-jose
+# For FastAPI's dependency injection (Depends) and data validation (BaseModel)
+pydantic

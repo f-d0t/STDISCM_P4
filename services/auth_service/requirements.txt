@@ -1,0 +1,12 @@
+# Core gRPC
+grpcio
+# Used to compile .proto files (needed if building the package)
+grpcio-tools
+# Database/Data ORM
+SQLAlchemy
+# Password hashing (used in main.py)
+passlib
+# JWT generation and validation (used in main.py)
+python-jose
+# Timezone support for JWT expiration
+pytz

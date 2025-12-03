@@ -1,0 +1,6 @@
+# Core gRPC
+grpcio
+# Used to compile .proto files (needed if building the package)
+grpcio-tools
+# Database/Data ORM
+SQLAlchemy
