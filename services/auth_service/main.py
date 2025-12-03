@@ -14,7 +14,7 @@ from client import auth_pb2
 from client import auth_pb2_grpc
 
 # Make sure to run the compilation command:
-# python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. auth.proto course.proto
+# python -m grpc_tools.protoc -I ./proto --python_out=./services/auth_service/client --grpc_python_out=./services/auth_service/client ./proto/auth.proto
 # to run each service:
 # python [filename]
 

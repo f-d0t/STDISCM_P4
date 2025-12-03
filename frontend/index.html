@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enrollment System</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        input, button { padding: 8px; margin: 5px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; }
+        .success { color: green; }
+        #message { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .course-card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .grade-card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enrollment System</h1>
+        <div id="auth-section">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+        <div id="main-section" style="display:none;">
+            <p>Welcome, <span id="user-display"></span> (<span id="role-display"></span>)</p>
+            <div id="courses-section"></div>
+            <div id="grades-section"></div>
+            <div id="upload-grade-section"></div>
+            <button onclick="logout()">Logout</button>
+        </div>
+        <div id="message"></div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
