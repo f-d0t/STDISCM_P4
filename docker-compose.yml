@@ -14,17 +14,7 @@ services:
       - ./client:/app/client  # maps host client folder into container
       - ./services/auth_service/auth.db:/app/services/auth_service/auth.db  # host file → container file
     ports:
-      - "8001:8001"
-    depends_on:
-      - proto_compiler
-
-  course_service:
-    build: ./services/course_service
-    volumes:
-      - ./client:/app/client  # maps host client folder into container
-      - ./services/course_service/courses.db:/app/services/course_service/courses.db  # host file → container file
-    ports:
-      - "8002:8002"
+      - "8000:8000"
     depends_on:
       - proto_compiler
 
@@ -34,9 +24,19 @@ services:
       - ./client:/app/client  # maps host client folder into container
       - ./services/enrollment_service/enrollment.db:/app/services/enrollment_service/enrollment.db  # host file → container file
     ports:
-      - "8003:8003"
+      - "8002:8002"
     depends_on:
       - proto_compiler
+
+  course_service:
+      build: ./services/course_service
+      volumes:
+        - ./client:/app/client  # maps host client folder into container
+        - ./services/course_service/courses.db:/app/services/course_service/courses.db  # host file → container file
+      ports:
+        - "8001:8001"
+      depends_on:
+        - proto_compiler
 
   gateway:
     build: ./gateway

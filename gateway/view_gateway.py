@@ -28,9 +28,9 @@ from client import enrollment_pb2_grpc
 # CONFIG
 
 REST_PORT = 8888 # The port the frontend (browser) will connect to
-AUTH_SERVICE_ADDRESS = 'localhost:8000'
-COURSE_SERVICE_ADDRESS = 'localhost:8001'
-ENROLLMENT_SERVICE_ADDRESS = 'localhost:8002'
+AUTH_SERVICE_ADDRESS = 'auth_service:8000'
+COURSE_SERVICE_ADDRESS = 'course_service:8001'
+ENROLLMENT_SERVICE_ADDRESS = 'enrollment_service:8002'
 
 app = FastAPI(title="View Node / REST-to-gRPC Gateway")
 

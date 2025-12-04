@@ -21,7 +21,7 @@ from client import course_pb2_grpc
 
 DATABASE_URL = "sqlite:///./services/enrollment_service/enrollment.db"
 GRPC_PORT = "8002" # This node runs on port 8002
-COURSE_SERVICE_ADDRESS = 'localhost:8001' # Address of the Course Node
+COURSE_SERVICE_ADDRESS = 'course_service:8001' # Address of the Course Node
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
