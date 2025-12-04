@@ -128,6 +128,85 @@ class EnrollmentServicer(enrollment_pb2_grpc.EnrollmentServiceServicer):
         finally:
             db.close()
 
+    def Unenroll(self, request, context):
+        """
+        Handles student unenrollment:
+          - Finds an existing ENROLLED record for (student_username, course_id)
+          - Deletes it (or marks as dropped)
+          - Returns the slot to the Course Service by incrementing slots by 1
+        """
+        db = SessionLocal()
+        try:
+            # Find existing active enrollment
+            enrollment = (
+                db.query(Enrollment)
+                .filter(
+                    Enrollment.student_username == request.student_username,
+                    Enrollment.course_id == request.course_id,
+                    Enrollment.status == "ENROLLED",
+                )
+                .first()
+            )
+
+            if not enrollment:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(
+                    f"No active enrollment found for student '{request.student_username}' "
+                    f"in course ID {request.course_id}."
+                )
+                return enrollment_pb2.UnenrollResponse(success=False)
+
+            # Ask Course Service for current slots, then add one back
+            course_stub = get_course_stub()
+            try:
+                list_response = course_stub.ListCourses(course_pb2.ListCoursesRequest())
+                course_details = next(
+                    (c for c in list_response.courses if c.id == request.course_id),
+                    None,
+                )
+
+                if not course_details:
+                    context.set_code(grpc.StatusCode.NOT_FOUND)
+                    context.set_details(
+                        f"Course ID {request.course_id} not found when trying to unenroll."
+                    )
+                    return enrollment_pb2.UnenrollResponse(success=False)
+
+                new_slots = course_details.slots + 1
+                update_request = course_pb2.UpdateSlotsRequest(
+                    course_id=request.course_id,
+                    new_slots=new_slots,
+                )
+                update_response = course_stub.UpdateSlots(update_request)
+
+                if not update_response.success:
+                    context.set_code(grpc.StatusCode.ABORTED)
+                    context.set_details(
+                        f"Unenrollment failed due to slot update error: {update_response.message}"
+                    )
+                    return enrollment_pb2.UnenrollResponse(success=False)
+
+            except grpc.RpcError as e:
+                context.set_code(grpc.StatusCode.UNAVAILABLE)
+                context.set_details(
+                    f"Course Service is unavailable or returned an error during unenroll: {e.details()}"
+                )
+                return enrollment_pb2.UnenrollResponse(success=False)
+
+            # Either delete the enrollment row or mark as dropped
+            enrollment_id = enrollment.id
+            db.delete(enrollment)     # physically remove from DB
+            # OR: enrollment.status = "DROPPED"  # if you prefer soft-delete
+            db.commit()
+
+            return enrollment_pb2.UnenrollResponse(
+                success=True,
+                message=f"Successfully unenrolled from course ID {request.course_id}.",
+                enrollment_id=enrollment_id,
+            )
+
+        finally:
+            db.close()
 
     def ViewGrades(self, request, context):
         """Allows students to view their enrollment records and grades."""

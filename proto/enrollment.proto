@@ -46,6 +46,18 @@ message UploadGradeRequest {
   float grade = 3;      
 }
 
+// 4. Unenroll RPC (Student feature)
+message UnenrollRequest {
+  string student_username = 1;
+  int32 course_id = 2;
+}
+
+message UnenrollResponse {
+  bool success = 1;
+  string message = 2;
+  int32 enrollment_id = 3; // ID of the enrollment that was removed (if any)
+}
+
 // Response for simple upload operation
 message UploadGradeResponse {
   bool success = 1;
@@ -64,4 +76,7 @@ service EnrollmentService {
   
   // Faculty to be able to upload grades
   rpc UploadGrade (UploadGradeRequest) returns (UploadGradeResponse);
+
+  // Students to unenroll from an existing course
+  rpc Unenroll (UnenrollRequest) returns (UnenrollResponse);
 }

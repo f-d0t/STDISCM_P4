@@ -64,6 +64,24 @@ class UploadGradeRequest(_message.Message):
     grade: float
     def __init__(self, faculty_username: _Optional[str] = ..., enrollment_id: _Optional[int] = ..., grade: _Optional[float] = ...) -> None: ...
 
+class UnenrollRequest(_message.Message):
+    __slots__ = ("student_username", "course_id")
+    STUDENT_USERNAME_FIELD_NUMBER: _ClassVar[int]
+    COURSE_ID_FIELD_NUMBER: _ClassVar[int]
+    student_username: str
+    course_id: int
+    def __init__(self, student_username: _Optional[str] = ..., course_id: _Optional[int] = ...) -> None: ...
+
+class UnenrollResponse(_message.Message):
+    __slots__ = ("success", "message", "enrollment_id")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    ENROLLMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    message: str
+    enrollment_id: int
+    def __init__(self, success: bool = ..., message: _Optional[str] = ..., enrollment_id: _Optional[int] = ...) -> None: ...
+
 class UploadGradeResponse(_message.Message):
     __slots__ = ("success", "message", "updated_grade", "updated_record")
     SUCCESS_FIELD_NUMBER: _ClassVar[int]

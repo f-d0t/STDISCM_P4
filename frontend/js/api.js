@@ -172,7 +172,16 @@ class ApiClient {
             method: 'GET',
         });
     }
-
+    /**
+    * Unenroll from a course
+    */
+    async unenroll(courseId) {
+    return await this.request('/unenroll', {
+        method: 'POST',
+        body: JSON.stringify({ course_id: courseId }),
+       });
+    }
+    
     /**
      * Upload grade (faculty only)
      */

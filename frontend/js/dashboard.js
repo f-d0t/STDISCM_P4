@@ -92,11 +92,43 @@ async function loadCourses() {
     if (!coursesList && !enrollCoursesList) return;
 
     try {
+        // 1. Get courses
         const courses = await api.getCourses();
 
-        const renderCourse = (course, showEnrollButton = false) => {
+        // 2. Get current enrollments (ENROLLED status)
+        let enrolledIds = new Set();
+        try {
+            const grades = await api.getGrades();   // hits /api/grades
+            enrolledIds = new Set(
+                grades
+                    .filter(r => r.status === 'ENROLLED')
+                    .map(r => r.course_id)
+            );
+        } catch (e) {
+            console.warn('Could not load current enrollments:', e);
+        }
+
+        const renderCourse = (course, showActions = false, isEnrolled = false) => {
             const card = document.createElement('div');
             card.className = 'course-card';
+
+            let actionBtn = '';
+            if (showActions) {
+                if (isEnrolled) {
+                    actionBtn = `
+                        <button class="btn btn-danger"
+                                onclick="unenrollFromCourse(${course.id})">
+                            Unenroll
+                        </button>`;
+                } else if (course.is_open && course.slots > 0) {
+                    actionBtn = `
+                        <button class="btn btn-enroll"
+                                onclick="enrollInCourse(${course.id})">
+                            Enroll
+                        </button>`;
+                }
+            }
+
             card.innerHTML = `
                 <div class="course-code">${course.code}</div>
                 <h4>${course.title}</h4>
@@ -106,26 +138,29 @@ async function loadCourses() {
                     </div>
                     <div>Status: ${course.is_open ? 'Open' : 'Closed'}</div>
                 </div>
-                ${showEnrollButton && course.is_open && course.slots > 0
-                    ? `<button class="btn btn-enroll" onclick="enrollInCourse(${course.id})">Enroll</button>`
-                    : ''}
+                ${actionBtn}
             `;
             return card;
         };
 
-        // "Available Courses" tab
+        // "Available Courses" tab – read-only listing
         if (coursesList) {
             coursesList.innerHTML = '';
             courses.forEach(course => {
-                coursesList.appendChild(renderCourse(course, false));
+                coursesList.appendChild(
+                    renderCourse(course, false, enrolledIds.has(course.id))
+                );
             });
         }
 
-        // "Enroll in Course" tab
+        // "Enroll in Course" tab – with Enroll / Unenroll buttons
         if (enrollCoursesList) {
             enrollCoursesList.innerHTML = '';
             courses.forEach(course => {
-                enrollCoursesList.appendChild(renderCourse(course, true));
+                const isEnrolled = enrolledIds.has(course.id);
+                enrollCoursesList.appendChild(
+                    renderCourse(course, true, isEnrolled)
+                );
             });
         }
     } catch (error) {
@@ -147,6 +182,27 @@ async function enrollInCourse(courseId) {
         await loadCourses();
     } catch (error) {
         alert(`Enrollment failed: ${error.message}`);
+    }
+}
+
+async function unenrollFromCourse(courseId) {
+    if (!confirm('Are you sure you want to unenroll from this course?')) {
+        return;
+    }
+
+    try {
+        const res = await api.unenroll(courseId);
+        if (!res.success) {
+            alert(res.message || 'Unenrollment failed');
+            return;
+        }
+
+        // Reload courses & grades so UI updates
+        await loadCourses();
+        await loadGrades?.();    // if you already have loadGrades()
+    } catch (err) {
+        console.error('Unenroll error:', err);
+        alert(err.message || 'Failed to unenroll from course.');
     }
 }
 

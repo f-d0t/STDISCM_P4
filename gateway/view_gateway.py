@@ -61,6 +61,7 @@ async def serve_js(file_path: str):
         return FileResponse(js_path, media_type="application/javascript")
     raise HTTPException(status_code=404)
 
+
 # --- gRPC Stub Initialization ---
 
 # Helper function to get gRPC stubs
@@ -145,6 +146,8 @@ class UploadGradeRequest(BaseModel):
     enrollment_id: int
     grade: float = Field(..., ge=0.0, le=4.0)
 
+class UnenrollRequest(BaseModel):
+    course_id: int
 
 # --- Dependency: Token Verification and User Extraction ---
 
@@ -315,6 +318,34 @@ async def enroll_student(
         )
     except grpc.RpcError as e:
         handle_grpc_error(e)
+
+# --- 4. UNENROLLMENT Endpoints (Requires Auth) ---
+
+@app.post("/api/unenroll", response_model=EnrollmentResponse)
+async def unenroll_student(
+    request: UnenrollRequest,
+    user: VerificationResult = Depends(verify_token_dependency),
+):
+    """Unenrolls the current student from a course via Enrollment gRPC Service."""
+    if user.role != "student":
+        raise HTTPException(status_code=403, detail="Only students can unenroll from courses.")
+
+    enroll_stub = get_enrollment_stub()
+    try:
+        grpc_request = enrollment_pb2.UnenrollRequest(
+            student_username=user.username,
+            course_id=request.course_id,
+        )
+        grpc_response = enroll_stub.Unenroll(grpc_request)
+
+        return EnrollmentResponse(
+            success=grpc_response.success,
+            message=grpc_response.message,
+            enrollment_id=grpc_response.enrollment_id,
+        )
+    except grpc.RpcError as e:
+        handle_grpc_error(e)
+
 
 @app.get("/api/grades", response_model=List[GradeRecordOut])
 async def view_grades(user: VerificationResult = Depends(verify_token_dependency)):
