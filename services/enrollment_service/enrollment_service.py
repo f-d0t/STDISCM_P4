@@ -1,8 +1,13 @@
 import grpc
 import time
+import sys
+import os
 from concurrent import futures
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float # Import Float
 from sqlalchemy.orm import declarative_base, sessionmaker
+
+# Add parent directory to path to find client module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # Import generated gRPC code
 from client import enrollment_pb2
@@ -197,12 +202,48 @@ class EnrollmentServicer(enrollment_pb2_grpc.EnrollmentServiceServicer):
             enrollment.grade = request.grade
             enrollment.status = "COMPLETED"
             db.commit()
-
-            return enrollment_pb2.UploadGradeResponse(
-                success=True,
-                message=f"Grade '{request.grade}' uploaded successfully for Enrollment ID {request.enrollment_id}.",
-                updated_grade=enrollment.grade # Return the float value
-            )
+            
+            # Get course details for the full record
+            course_stub = get_course_stub()
+            try:
+                list_response = course_stub.ListCourses(course_pb2.ListCoursesRequest())
+                course_map = {c.id: c for c in list_response.courses}
+                course_data = course_map.get(enrollment.course_id)
+                
+                # Build the full GradeRecord
+                grade_record = enrollment_pb2.GradeRecord(
+                    enrollment_id=enrollment.id,
+                    course_id=enrollment.course_id,
+                    course_code=course_data.code if course_data else "UNKNOWN",
+                    course_title=course_data.title if course_data else "UNKNOWN COURSE",
+                    student_username=enrollment.student_username,
+                    grade=enrollment.grade,
+                    status=enrollment.status
+                )
+                
+                return enrollment_pb2.UploadGradeResponse(
+                    success=True,
+                    message=f"Grade '{request.grade}' uploaded successfully for Enrollment ID {request.enrollment_id}.",
+                    updated_grade=enrollment.grade,
+                    updated_record=grade_record
+                )
+            except grpc.RpcError:
+                # If course service unavailable, return response without course details
+                grade_record = enrollment_pb2.GradeRecord(
+                    enrollment_id=enrollment.id,
+                    course_id=enrollment.course_id,
+                    course_code="UNKNOWN",
+                    course_title="UNKNOWN COURSE",
+                    student_username=enrollment.student_username,
+                    grade=enrollment.grade,
+                    status=enrollment.status
+                )
+                return enrollment_pb2.UploadGradeResponse(
+                    success=True,
+                    message=f"Grade '{request.grade}' uploaded successfully for Enrollment ID {request.enrollment_id}.",
+                    updated_grade=enrollment.grade,
+                    updated_record=grade_record
+                )
 
         finally:
             db.close()

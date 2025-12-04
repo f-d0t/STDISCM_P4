@@ -1,9 +1,14 @@
 import grpc
 import time
+import sys
+import os
 from concurrent import futures
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import IntegrityError
+
+# Add parent directory to path to find client module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # IMPORTANT: These imports rely on the generated gRPC files.
 # Make sure you run the compilation command:

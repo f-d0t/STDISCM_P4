@@ -1,9 +1,14 @@
 import grpc
 import time
+import sys
+import os
 from concurrent import futures
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
+
+# Add parent directory to path to find client module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # SQLAlchemy imports for database persistence
 from sqlalchemy import create_engine, Column, Integer, String
@@ -29,6 +34,12 @@ GRPC_PORT = "8000"
 ALLOWED_ROLES = ["student", "faculty"]
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# --- TOKEN BLACKLIST (for logout functionality) ---
+# In-memory set to store blacklisted tokens
+# For distributed systems, this should be in a shared cache (Redis) or database
+# For this exercise, in-memory is sufficient within a single auth service node
+_token_blacklist = set()
 
 
 # DATABASE SETUP
@@ -93,7 +104,7 @@ def authenticate_user(username, password):
 def create_access_token(data: dict, expires_delta: timedelta):
     """Creates a signed JWT token."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
+    expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": int(expire.timestamp())})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -141,6 +152,18 @@ class AuthServicer(auth_pb2_grpc.AuthServiceServicer):
     def VerifyToken(self, request, context):
         """Verifies a JWT token and returns the user payload."""
         token = request.token
+        
+        if not token:
+            context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+            context.set_details("No token provided")
+            return auth_pb2.VerifyTokenResponse(valid=False)
+        
+        # Check if token is blacklisted (logged out)
+        if token in _token_blacklist:
+            context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+            context.set_details("Token has been invalidated (logged out)")
+            return auth_pb2.VerifyTokenResponse(valid=False)
+        
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             
@@ -148,17 +171,31 @@ class AuthServicer(auth_pb2_grpc.AuthServiceServicer):
             username = payload.get("sub")
             role = payload.get("role")
             
-            if not username or not role or not get_user_by_username(username):
-                raise JWTError("User not found or missing claims.")
+            if not username or not role:
+                print(f"VerifyToken: Missing claims - username: {username}, role: {role}")
+                raise JWTError("Missing username or role in token")
+            
+            user = get_user_by_username(username)
+            if not user:
+                print(f"VerifyToken: User not found in database - username: {username}")
+                raise JWTError("User not found in database")
 
             return auth_pb2.VerifyTokenResponse(
                 username=username,
                 role=role,
                 valid=True
             )
-        except JWTError:
+        except JWTError as e:
+            print(f"VerifyToken: JWTError - {str(e)}")
             context.set_code(grpc.StatusCode.UNAUTHENTICATED)
-            context.set_details("Invalid or expired token")
+            context.set_details(f"Invalid or expired token: {str(e)}")
+            return auth_pb2.VerifyTokenResponse(valid=False)
+        except Exception as e:
+            print(f"VerifyToken: Unexpected error - {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Token verification error: {str(e)}")
             return auth_pb2.VerifyTokenResponse(valid=False)
 
     def CreateAccount(self, request, context):
@@ -191,25 +228,58 @@ class AuthServicer(auth_pb2_grpc.AuthServiceServicer):
             context.set_details("Failed to create user in database.")
             return auth_pb2.CreateAccountResponse(success=False)
 
+    def Logout(self, request, context):
+        """Invalidates a JWT token by adding it to the blacklist."""
+        token = request.token
+        
+        # Verify the token first to ensure it's valid before blacklisting
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            # Token is valid, add it to blacklist
+            _token_blacklist.add(token)
+            
+            # Optional: Clean up expired tokens from blacklist periodically
+            # For now, we'll let them accumulate (they're just strings)
+            # In production, implement TTL cleanup or use Redis with expiration
+            
+            return auth_pb2.LogoutResponse(
+                success=True,
+                message="Successfully logged out. Token has been invalidated."
+            )
+        except JWTError:
+            # Token is already invalid/expired, but we'll still return success
+            # to not reveal information about token validity
+            return auth_pb2.LogoutResponse(
+                success=True,
+                message="Logout completed."
+            )
+
 
 # --- gRPC Server Startup ---
 
 def serve():
     """Starts the gRPC server for the Auth Service."""
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    auth_pb2_grpc.add_AuthServiceServicer_to_server(AuthServicer(), server)
-
-    bind_address = f'[::]:{GRPC_PORT}'
-    server.add_insecure_port(bind_address)
-    print(f"Auth Service server (gRPC) starting on {bind_address}.")
-    server.start()
-
     try:
-        while True:
-            time.sleep(86400) 
-    except KeyboardInterrupt:
-        print("Stopping Auth Service server...")
-        server.stop(0)
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        auth_pb2_grpc.add_AuthServiceServicer_to_server(AuthServicer(), server)
+
+        bind_address = f'[::]:{GRPC_PORT}'
+        server.add_insecure_port(bind_address)
+        print(f"Auth Service server (gRPC) starting on {bind_address}.")
+        server.start()
+        print(f"✓ Auth Service is running and ready to accept requests on port {GRPC_PORT}")
+
+        try:
+            while True:
+                time.sleep(86400) 
+        except KeyboardInterrupt:
+            print("\nStopping Auth Service server...")
+            server.stop(0)
+    except Exception as e:
+        print(f"✗ Error starting Auth Service: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 if __name__ == '__main__':
     serve()

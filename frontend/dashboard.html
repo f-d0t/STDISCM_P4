@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment System - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1>Enrollment System</h1>
+            <div class="nav-user">
+                <span id="userInfo">Loading...</span>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="studentView" class="dashboard-section" style="display: none;">
+            <h2>Student Dashboard</h2>
+            <div class="nav-tabs">
+                <button class="tab-btn active" data-tab="courses">Available Courses</button>
+                <button class="tab-btn" data-tab="enroll">Enroll in Course</button>
+                <button class="tab-btn" data-tab="grades">My Grades</button>
+            </div>
+            
+            <div id="coursesTab" class="tab-content active">
+                <h3>Available Courses</h3>
+                <div id="coursesList" class="courses-grid"></div>
+            </div>
+            
+            <div id="enrollTab" class="tab-content">
+                <h3>Enroll in a Course</h3>
+                <div id="enrollCoursesList" class="courses-grid"></div>
+            </div>
+            
+            <div id="gradesTab" class="tab-content">
+                <h3>My Grades</h3>
+                <div id="gradesList" class="grades-table-container"></div>
+            </div>
+        </div>
+
+        <div id="facultyView" class="dashboard-section" style="display: none;">
+            <h2>Faculty Dashboard</h2>
+            <div class="nav-tabs">
+                <button class="tab-btn active" data-tab="upload-grade">Upload Grades</button>
+            </div>
+            
+            <div id="uploadGradeTab" class="tab-content active">
+                <h3>Upload Student Grade</h3>
+                <form id="uploadGradeForm">
+                    <div class="form-group">
+                        <label for="enrollmentId">Enrollment ID:</label>
+                        <input type="number" id="enrollmentId" name="enrollmentId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="grade">Grade (0.0 - 4.0):</label>
+                        <input type="number" id="grade" name="grade" step="0.1" min="0" max="4" required>
+                    </div>
+                    <div id="uploadErrorMessage" class="error-message"></div>
+                    <div id="uploadSuccessMessage" class="success-message"></div>
+                    <button type="submit" class="btn btn-primary">Upload Grade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
+

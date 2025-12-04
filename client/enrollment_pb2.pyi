@@ -65,11 +65,13 @@ class UploadGradeRequest(_message.Message):
     def __init__(self, faculty_username: _Optional[str] = ..., enrollment_id: _Optional[int] = ..., grade: _Optional[float] = ...) -> None: ...
 
 class UploadGradeResponse(_message.Message):
-    __slots__ = ("success", "message", "updated_grade")
+    __slots__ = ("success", "message", "updated_grade", "updated_record")
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     UPDATED_GRADE_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_RECORD_FIELD_NUMBER: _ClassVar[int]
     success: bool
     message: str
     updated_grade: float
-    def __init__(self, success: bool = ..., message: _Optional[str] = ..., updated_grade: _Optional[float] = ...) -> None: ...
+    updated_record: GradeRecord
+    def __init__(self, success: bool = ..., message: _Optional[str] = ..., updated_grade: _Optional[float] = ..., updated_record: _Optional[_Union[GradeRecord, _Mapping]] = ...) -> None: ...

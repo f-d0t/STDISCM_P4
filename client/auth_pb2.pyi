@@ -57,3 +57,17 @@ class CreateAccountResponse(_message.Message):
     message: str
     role: str
     def __init__(self, success: bool = ..., message: _Optional[str] = ..., role: _Optional[str] = ...) -> None: ...
+
+class LogoutRequest(_message.Message):
+    __slots__ = ("token",)
+    TOKEN_FIELD_NUMBER: _ClassVar[int]
+    token: str
+    def __init__(self, token: _Optional[str] = ...) -> None: ...
+
+class LogoutResponse(_message.Message):
+    __slots__ = ("success", "message")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    message: str
+    def __init__(self, success: bool = ..., message: _Optional[str] = ...) -> None: ...

@@ -51,6 +51,7 @@ message UploadGradeResponse {
   bool success = 1;
   string message = 2;
   float updated_grade = 3;
+  GradeRecord updated_record = 4; // Full enrollment record after grade upload
 }
 
 // --- Service Definition ---

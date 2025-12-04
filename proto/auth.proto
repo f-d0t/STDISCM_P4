@@ -42,11 +42,24 @@ message CreateAccountResponse {
   string role = 3;
 }
 
+// 4. Logout RPC
+message LogoutRequest {
+  string token = 1; // Token to invalidate/blacklist
+}
+
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
 // --- Service Definition ---
 service AuthService {
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
   
   // RPC for user registration
-  rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse); 
+  rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
+  
+  // RPC for logout - invalidates the token
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
 }

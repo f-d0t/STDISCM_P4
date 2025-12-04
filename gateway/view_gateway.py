@@ -1,11 +1,18 @@
 import grpc
 import json
 import time
+import sys
 from typing import List, Optional, Union
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from datetime import datetime
 from starlette.middleware.cors import CORSMiddleware
+import os
+
+# Add parent directory to path to find client module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # IMPORTANT: Import generated gRPC code and protobuf messages
 from client import auth_pb2
@@ -35,6 +42,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static files from frontend directory
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
+# Serve CSS and JS files directly
+@app.get("/css/{file_path:path}")
+async def serve_css(file_path: str):
+    css_path = os.path.join(frontend_path, "css", file_path)
+    if os.path.exists(css_path):
+        return FileResponse(css_path, media_type="text/css")
+    raise HTTPException(status_code=404)
+
+@app.get("/js/{file_path:path}")
+async def serve_js(file_path: str):
+    js_path = os.path.join(frontend_path, "js", file_path)
+    if os.path.exists(js_path):
+        return FileResponse(js_path, media_type="application/javascript")
+    raise HTTPException(status_code=404)
 
 # --- gRPC Stub Initialization ---
 
@@ -88,6 +113,10 @@ class VerificationResult(BaseModel):
     username: str
     role: str
 
+class LogoutResponse(BaseModel):
+    success: bool
+    message: str
+
 class CourseOut(BaseModel):
     id: int
     code: str
@@ -122,12 +151,15 @@ class UploadGradeRequest(BaseModel):
 # NOTE: In a real-world system, this dependency would communicate with the Auth Service 
 # to verify the token on every protected API call. For simplicity here, we assume
 # the token is passed in the header and we will verify it with the gRPC service.
-def verify_token_dependency(auth_token: Optional[str] = Depends(lambda header: header.get('Authorization'))):
+def verify_token_dependency(authorization: Optional[str] = Header(None, alias="Authorization")):
     """Extracts and verifies the JWT token using the Auth gRPC Service."""
-    if not auth_token or not auth_token.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authentication required.")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required. No token provided.")
         
-    token = auth_token.split(" ")[1]
+    token = authorization.split(" ")[1]
+    
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication required. Invalid token format.")
     
     auth_stub = get_auth_stub()
     try:
@@ -144,16 +176,49 @@ def verify_token_dependency(auth_token: Optional[str] = Depends(lambda header: h
             role=verify_response.role
         )
     except grpc.RpcError as e:
+        # Log the actual gRPC error for debugging
+        if e.code() == grpc.StatusCode.UNAVAILABLE:
+            raise HTTPException(status_code=503, detail=f"Auth Service unavailable: {e.details()}")
         handle_grpc_error(e)
-    except Exception:
-        raise HTTPException(status_code=500, detail="Token verification failed.")
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Log unexpected errors
+        import traceback
+        print(f"Token verification error: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Token verification failed: {str(e)}")
 
 
 # --- API ENDPOINTS (The REST Layer) ---
 
 @app.get("/")
-def health_check():
+async def root():
+    """Serve index.html or return health check."""
+    frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+    index_path = os.path.join(frontend_path, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
     return {"status": "View Node (REST Gateway) is running", "port": REST_PORT}
+
+@app.get("/index.html")
+async def serve_index():
+    """Serve index.html."""
+    frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+    index_path = os.path.join(frontend_path, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Index page not found")
+
+@app.get("/dashboard.html")
+async def serve_dashboard():
+    """Serve dashboard.html."""
+    frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+    dashboard_path = os.path.join(frontend_path, "dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Dashboard not found")
 
 # --- 1. AUTH Endpoints ---
 
@@ -165,17 +230,43 @@ async def login(request: LoginRequest):
         login_request = auth_pb2.LoginRequest(username=request.username, password=request.password)
         login_response = auth_stub.Login(login_request)
         
+        if not login_response.access_token:
+            raise HTTPException(status_code=401, detail="Login failed: No token received")
+        
         return LoginResponse(
             access_token=login_response.access_token,
             role=login_response.role
         )
     except grpc.RpcError as e:
+        if e.code() == grpc.StatusCode.UNAVAILABLE:
+            raise HTTPException(status_code=503, detail=f"Auth Service is not available. Make sure it's running on {AUTH_SERVICE_ADDRESS}")
         handle_grpc_error(e)
 
 @app.get("/api/verify_auth", response_model=VerificationResult)
 async def verify_auth(user: VerificationResult = Depends(verify_token_dependency)):
     """Verifies the token via the dependency and returns the user payload."""
     return user
+
+@app.post("/api/logout", response_model=LogoutResponse)
+async def logout(authorization: Optional[str] = Header(None, alias="Authorization")):
+    """Logs out the user by invalidating their JWT token."""
+    # Extract token from Authorization header
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    
+    token = authorization.split(" ")[1]
+    
+    auth_stub = get_auth_stub()
+    try:
+        logout_request = auth_pb2.LogoutRequest(token=token)
+        logout_response = auth_stub.Logout(logout_request)
+        
+        return LogoutResponse(
+            success=logout_response.success,
+            message=logout_response.message
+        )
+    except grpc.RpcError as e:
+        handle_grpc_error(e)
 
 
 # --- 2. COURSE Endpoints (Requires Auth) ---
@@ -272,23 +363,13 @@ async def upload_grade(
         )
         upload_response = enroll_stub.UploadGrade(upload_request)
         
-        # To return the full GradeRecordOut, we need to immediately call ViewGrades 
-        # to fetch the updated record. This is a common pattern when updating data.
+        if not upload_response.success:
+            raise HTTPException(status_code=500, detail=upload_response.message)
         
-        # Optimization: For simplicity, we assume success and return a partial object.
-        # In a real app, you'd fetch the complete record after the update.
-        
-        # Re-fetch the record for a proper response payload
-        view_request = enrollment_pb2.ViewGradesRequest(student_username="student1") # HACK: Need a better way to find the student
-        view_response = enroll_stub.ViewGrades(view_request)
-        
-        updated_record = next(
-            (r for r in view_response.records if r.enrollment_id == request.enrollment_id), 
-            None
-        )
-
-        if updated_record:
-             return GradeRecordOut(
+        # Use the updated_record returned directly from the service
+        if upload_response.updated_record:
+            updated_record = upload_response.updated_record
+            return GradeRecordOut(
                 enrollment_id=updated_record.enrollment_id,
                 course_id=updated_record.course_id,
                 course_code=updated_record.course_code,
@@ -298,7 +379,7 @@ async def upload_grade(
                 status=updated_record.status
             )
         
-        raise HTTPException(status_code=500, detail="Grade uploaded but could not re-fetch the updated record.")
+        raise HTTPException(status_code=500, detail="Grade uploaded but no record returned.")
         
     except grpc.RpcError as e:
         handle_grpc_error(e)
