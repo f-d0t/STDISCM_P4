@@ -11,9 +11,9 @@ def compile_proto():
     """Compile all proto files to client/ directory."""
     
     proto_files = [
-        "proto/auth.proto",
-        "proto/course.proto",
-        "proto/enrollment.proto"
+        "./auth.proto",
+        "./course.proto",
+        "./enrollment.proto"
     ]
     
     # Ensure proto files exist
@@ -25,7 +25,7 @@ def compile_proto():
     # Compile command
     cmd = [
         sys.executable, "-m", "grpc_tools.protoc",
-        "-Iproto",  # Include directory for proto imports
+        "-I.",  # Include directory for proto imports
         "--python_out=client",  # Output directory for Python files
         "--pyi_out=client",  # Output directory for type stubs
         "--grpc_python_out=client",  # Output directory for gRPC files

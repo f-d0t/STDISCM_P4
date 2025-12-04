@@ -10,3 +10,10 @@
    uvicorn view_gateway:app --reload --port 8888
 
 6) http://localhost:8888/
+
+
+
+to run in docker (open docker desktop first)
+
+- docker-compose build
+- docker-compose up

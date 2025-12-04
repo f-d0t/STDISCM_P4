@@ -8,3 +8,4 @@ grpcio
 python-jose
 # For FastAPI's dependency injection (Depends) and data validation (BaseModel)
 pydantic
+protobuf
