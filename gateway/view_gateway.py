@@ -375,6 +375,34 @@ async def view_grades(user: VerificationResult = Depends(verify_token_dependency
         handle_grpc_error(e)
 
 
+@app.get("/api/faculty/enrollments", response_model=List[GradeRecordOut])
+async def list_all_enrollments(user: VerificationResult = Depends(verify_token_dependency)):
+    """
+    Lists all enrollments for faculty to see which students are enrolled
+    and their current grades/status.
+    """
+    if user.role != "faculty":
+        raise HTTPException(status_code=403, detail="Only faculty can view all enrollments.")
+
+    enroll_stub = get_enrollment_stub()
+    try:
+        grpc_response = enroll_stub.ListEnrollments(enrollment_pb2.ListEnrollmentsRequest())
+
+        return [
+            GradeRecordOut(
+                enrollment_id=r.enrollment_id,
+                course_id=r.course_id,
+                course_code=r.course_code,
+                course_title=r.course_title,
+                student_username=r.student_username,
+                grade=r.grade,
+                status=r.status,
+            )
+            for r in grpc_response.records
+        ]
+    except grpc.RpcError as e:
+        handle_grpc_error(e)
+
 @app.post("/api/upload_grade", response_model=GradeRecordOut)
 async def upload_grade(
     request: UploadGradeRequest,

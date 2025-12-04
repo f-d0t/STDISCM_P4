@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x65nrollment.proto\x12\nenrollment\"\xaa\x01\n\x0bGradeRecord\x12\x15\n\renrollment_id\x18\x01 \x01(\x05\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\x12\x13\n\x0b\x63ourse_code\x18\x03 \x01(\t\x12\x14\n\x0c\x63ourse_title\x18\x04 \x01(\t\x12\x18\n\x10student_username\x18\x05 \x01(\t\x12\x12\n\x05grade\x18\x06 \x01(\x02H\x00\x88\x01\x01\x12\x0e\n\x06status\x18\x07 \x01(\tB\x08\n\x06_grade\"<\n\rEnrollRequest\x12\x18\n\x10student_username\x18\x01 \x01(\t\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\"I\n\x0e\x45nrollResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x15\n\renrollment_id\x18\x03 \x01(\x05\"-\n\x11ViewGradesRequest\x12\x18\n\x10student_username\x18\x01 \x01(\t\">\n\x12ViewGradesResponse\x12(\n\x07records\x18\x01 \x03(\x0b\x32\x17.enrollment.GradeRecord\"T\n\x12UploadGradeRequest\x12\x18\n\x10\x66\x61\x63ulty_username\x18\x01 \x01(\t\x12\x15\n\renrollment_id\x18\x02 \x01(\x05\x12\r\n\x05grade\x18\x03 \x01(\x02\">\n\x0fUnenrollRequest\x12\x18\n\x10student_username\x18\x01 \x01(\t\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\"K\n\x10UnenrollResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x15\n\renrollment_id\x18\x03 \x01(\x05\"\x7f\n\x13UploadGradeResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x15\n\rupdated_grade\x18\x03 \x01(\x02\x12/\n\x0eupdated_record\x18\x04 \x01(\x0b\x32\x17.enrollment.GradeRecord2\xb8\x02\n\x11\x45nrollmentService\x12?\n\x06\x45nroll\x12\x19.enrollment.EnrollRequest\x1a\x1a.enrollment.EnrollResponse\x12K\n\nViewGrades\x12\x1d.enrollment.ViewGradesRequest\x1a\x1e.enrollment.ViewGradesResponse\x12N\n\x0bUploadGrade\x12\x1e.enrollment.UploadGradeRequest\x1a\x1f.enrollment.UploadGradeResponse\x12\x45\n\x08Unenroll\x12\x1b.enrollment.UnenrollRequest\x1a\x1c.enrollment.UnenrollResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x65nrollment.proto\x12\nenrollment\"\xaa\x01\n\x0bGradeRecord\x12\x15\n\renrollment_id\x18\x01 \x01(\x05\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\x12\x13\n\x0b\x63ourse_code\x18\x03 \x01(\t\x12\x14\n\x0c\x63ourse_title\x18\x04 \x01(\t\x12\x18\n\x10student_username\x18\x05 \x01(\t\x12\x12\n\x05grade\x18\x06 \x01(\x02H\x00\x88\x01\x01\x12\x0e\n\x06status\x18\x07 \x01(\tB\x08\n\x06_grade\"<\n\rEnrollRequest\x12\x18\n\x10student_username\x18\x01 \x01(\t\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\"I\n\x0e\x45nrollResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x15\n\renrollment_id\x18\x03 \x01(\x05\"-\n\x11ViewGradesRequest\x12\x18\n\x10student_username\x18\x01 \x01(\t\">\n\x12ViewGradesResponse\x12(\n\x07records\x18\x01 \x03(\x0b\x32\x17.enrollment.GradeRecord\"\x18\n\x16ListEnrollmentsRequest\"C\n\x17ListEnrollmentsResponse\x12(\n\x07records\x18\x01 \x03(\x0b\x32\x17.enrollment.GradeRecord\"T\n\x12UploadGradeRequest\x12\x18\n\x10\x66\x61\x63ulty_username\x18\x01 \x01(\t\x12\x15\n\renrollment_id\x18\x02 \x01(\x05\x12\r\n\x05grade\x18\x03 \x01(\x02\">\n\x0fUnenrollRequest\x12\x18\n\x10student_username\x18\x01 \x01(\t\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\"K\n\x10UnenrollResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x15\n\renrollment_id\x18\x03 \x01(\x05\"\x7f\n\x13UploadGradeResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x15\n\rupdated_grade\x18\x03 \x01(\x02\x12/\n\x0eupdated_record\x18\x04 \x01(\x0b\x32\x17.enrollment.GradeRecord2\x94\x03\n\x11\x45nrollmentService\x12?\n\x06\x45nroll\x12\x19.enrollment.EnrollRequest\x1a\x1a.enrollment.EnrollResponse\x12K\n\nViewGrades\x12\x1d.enrollment.ViewGradesRequest\x1a\x1e.enrollment.ViewGradesResponse\x12Z\n\x0fListEnrollments\x12\".enrollment.ListEnrollmentsRequest\x1a#.enrollment.ListEnrollmentsResponse\x12N\n\x0bUploadGrade\x12\x1e.enrollment.UploadGradeRequest\x1a\x1f.enrollment.UploadGradeResponse\x12\x45\n\x08Unenroll\x12\x1b.enrollment.UnenrollRequest\x1a\x1c.enrollment.UnenrollResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -41,14 +41,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_VIEWGRADESREQUEST']._serialized_end=387
   _globals['_VIEWGRADESRESPONSE']._serialized_start=389
   _globals['_VIEWGRADESRESPONSE']._serialized_end=451
-  _globals['_UPLOADGRADEREQUEST']._serialized_start=453
-  _globals['_UPLOADGRADEREQUEST']._serialized_end=537
-  _globals['_UNENROLLREQUEST']._serialized_start=539
-  _globals['_UNENROLLREQUEST']._serialized_end=601
-  _globals['_UNENROLLRESPONSE']._serialized_start=603
-  _globals['_UNENROLLRESPONSE']._serialized_end=678
-  _globals['_UPLOADGRADERESPONSE']._serialized_start=680
-  _globals['_UPLOADGRADERESPONSE']._serialized_end=807
-  _globals['_ENROLLMENTSERVICE']._serialized_start=810
-  _globals['_ENROLLMENTSERVICE']._serialized_end=1122
+  _globals['_LISTENROLLMENTSREQUEST']._serialized_start=453
+  _globals['_LISTENROLLMENTSREQUEST']._serialized_end=477
+  _globals['_LISTENROLLMENTSRESPONSE']._serialized_start=479
+  _globals['_LISTENROLLMENTSRESPONSE']._serialized_end=546
+  _globals['_UPLOADGRADEREQUEST']._serialized_start=548
+  _globals['_UPLOADGRADEREQUEST']._serialized_end=632
+  _globals['_UNENROLLREQUEST']._serialized_start=634
+  _globals['_UNENROLLREQUEST']._serialized_end=696
+  _globals['_UNENROLLRESPONSE']._serialized_start=698
+  _globals['_UNENROLLRESPONSE']._serialized_end=773
+  _globals['_UPLOADGRADERESPONSE']._serialized_start=775
+  _globals['_UPLOADGRADERESPONSE']._serialized_end=902
+  _globals['_ENROLLMENTSERVICE']._serialized_start=905
+  _globals['_ENROLLMENTSERVICE']._serialized_end=1309
 # @@protoc_insertion_point(module_scope)

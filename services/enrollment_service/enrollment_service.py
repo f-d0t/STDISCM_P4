@@ -257,6 +257,50 @@ class EnrollmentServicer(enrollment_pb2_grpc.EnrollmentServiceServicer):
             db.close()
 
 
+    def ListEnrollments(self, request, context):
+        """
+        Allows faculty/admin to view all enrollment records across all students.
+        Returns the same GradeRecord structure used for ViewGrades.
+        """
+        db = SessionLocal()
+        course_stub = get_course_stub()
+
+        try:
+            # 1. Get all enrollments
+            enrollments = db.query(Enrollment).all()
+
+            if not enrollments:
+                return enrollment_pb2.ListEnrollmentsResponse(records=[])
+
+            # 2. Get Course details from Course Service
+            list_response = course_stub.ListCourses(course_pb2.ListCoursesRequest())
+            course_map = {c.id: c for c in list_response.courses}
+
+            records = []
+            for e in enrollments:
+                course_data = course_map.get(e.course_id)
+                grade_value = e.grade if e.grade is not None else 0.0
+
+                records.append(
+                    enrollment_pb2.GradeRecord(
+                        enrollment_id=e.id,
+                        course_id=e.course_id,
+                        course_code=course_data.code if course_data else "UNKNOWN",
+                        course_title=course_data.title if course_data else "UNKNOWN COURSE",
+                        student_username=e.student_username,
+                        grade=grade_value,
+                        status=e.status,
+                    )
+                )
+
+            return enrollment_pb2.ListEnrollmentsResponse(records=records)
+        except grpc.RpcError as e:
+            context.set_code(grpc.StatusCode.UNAVAILABLE)
+            context.set_details(f"Course Service is unavailable or returned an error: {e.details()}")
+            return enrollment_pb2.ListEnrollmentsResponse(records=[])
+        finally:
+            db.close()
+
     def UploadGrade(self, request, context):
         """Allows faculty to upload a grade for a specific enrollment record."""
         db = SessionLocal()

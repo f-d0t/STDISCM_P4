@@ -54,6 +54,16 @@ class ViewGradesResponse(_message.Message):
     records: _containers.RepeatedCompositeFieldContainer[GradeRecord]
     def __init__(self, records: _Optional[_Iterable[_Union[GradeRecord, _Mapping]]] = ...) -> None: ...
 
+class ListEnrollmentsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListEnrollmentsResponse(_message.Message):
+    __slots__ = ("records",)
+    RECORDS_FIELD_NUMBER: _ClassVar[int]
+    records: _containers.RepeatedCompositeFieldContainer[GradeRecord]
+    def __init__(self, records: _Optional[_Iterable[_Union[GradeRecord, _Mapping]]] = ...) -> None: ...
+
 class UploadGradeRequest(_message.Message):
     __slots__ = ("faculty_username", "enrollment_id", "grade")
     FACULTY_USERNAME_FIELD_NUMBER: _ClassVar[int]

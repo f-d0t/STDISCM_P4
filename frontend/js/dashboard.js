@@ -79,19 +79,99 @@ async function setupFacultyDashboard() {
         errorMsg.classList.remove('show');
         successMsg.classList.remove('show');
 
-        const username = document.getElementById('studentUsername').value.trim();
-        const grade = parseFloat(document.getElementById('grade').value);
+        const enrollmentIdValue = document.getElementById('enrollmentId').value;
+        const gradeValue = document.getElementById('grade').value;
+
+        const enrollmentId = parseInt(enrollmentIdValue, 10);
+        const grade = parseFloat(gradeValue);
+
+        if (Number.isNaN(enrollmentId) || enrollmentId <= 0) {
+            errorMsg.textContent = 'Please enter a valid Enrollment ID.';
+            errorMsg.classList.add('show');
+            return;
+        }
+
+        if (Number.isNaN(grade) || grade < 0 || grade > 4) {
+            errorMsg.textContent = 'Grade must be a number between 0.0 and 4.0.';
+            errorMsg.classList.add('show');
+            return;
+        }
 
         try {
-            const response = await api.uploadGrade(username, grade);
+            const response = await api.uploadGrade(enrollmentId, grade);
             successMsg.textContent = response.message || 'Grade uploaded successfully!';
             successMsg.classList.add('show');
             form.reset();
+            // Reload enrollments list so updated grades/status are visible
+            await loadFacultyEnrollments();
         } catch (error) {
             errorMsg.textContent = error.message || 'Failed to upload grade.';
             errorMsg.classList.add('show');
         }
     });
+
+    // Initial load of enrollments list
+    await loadFacultyEnrollments();
+}
+
+async function loadFacultyEnrollments() {
+    const container = document.getElementById('facultyEnrollmentsList');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading">Loading enrollments...</div>';
+
+    try {
+        const enrollments = await api.getFacultyEnrollments();
+
+        if (!enrollments.length) {
+            container.innerHTML = '<div class="loading">No enrollments found.</div>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'grades-table';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Enrollment ID</th>
+                    <th>Student</th>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>Grade</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${enrollments.map(rec => `
+                    <tr data-enrollment-id="${rec.enrollment_id}">
+                        <td>${rec.enrollment_id}</td>
+                        <td>${rec.student_username}</td>
+                        <td>${rec.course_code}</td>
+                        <td>${rec.course_title}</td>
+                        <td>${rec.grade > 0 ? rec.grade.toFixed(2) : 'N/A'}</td>
+                        <td><span class="grade-badge ${rec.status.toLowerCase()}">${rec.status}</span></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+
+        // Attach click handlers to prefill Enrollment ID
+        table.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                const id = row.getAttribute('data-enrollment-id');
+                const enrollmentInput = document.getElementById('enrollmentId');
+                if (enrollmentInput && id) {
+                    enrollmentInput.value = id;
+                }
+            });
+        });
+
+        container.innerHTML = '';
+        container.appendChild(table);
+    } catch (error) {
+        console.error('Failed to load faculty enrollments:', error);
+        container.innerHTML = `<div class="error-message show">Failed to load enrollments: ${error.message}</div>`;
+    }
 }
 
 async function loadCourses() {

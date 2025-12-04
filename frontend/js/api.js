@@ -194,6 +194,15 @@ class ApiClient {
             }),
         });
     }
+
+    /**
+     * Get all enrollments (faculty only)
+     */
+    async getFacultyEnrollments() {
+        return await this.request('/faculty/enrollments', {
+            method: 'GET',
+        });
+    }
 }
 
 // Export singleton instance

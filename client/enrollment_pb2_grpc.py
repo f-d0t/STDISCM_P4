@@ -45,6 +45,11 @@ class EnrollmentServiceStub(object):
                 request_serializer=enrollment__pb2.ViewGradesRequest.SerializeToString,
                 response_deserializer=enrollment__pb2.ViewGradesResponse.FromString,
                 _registered_method=True)
+        self.ListEnrollments = channel.unary_unary(
+                '/enrollment.EnrollmentService/ListEnrollments',
+                request_serializer=enrollment__pb2.ListEnrollmentsRequest.SerializeToString,
+                response_deserializer=enrollment__pb2.ListEnrollmentsResponse.FromString,
+                _registered_method=True)
         self.UploadGrade = channel.unary_unary(
                 '/enrollment.EnrollmentService/UploadGrade',
                 request_serializer=enrollment__pb2.UploadGradeRequest.SerializeToString,
@@ -70,6 +75,13 @@ class EnrollmentServiceServicer(object):
 
     def ViewGrades(self, request, context):
         """Students to view their previous grades
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListEnrollments(self, request, context):
+        """Faculty to see all enrollments for grading/overview
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -101,6 +113,11 @@ def add_EnrollmentServiceServicer_to_server(servicer, server):
                     servicer.ViewGrades,
                     request_deserializer=enrollment__pb2.ViewGradesRequest.FromString,
                     response_serializer=enrollment__pb2.ViewGradesResponse.SerializeToString,
+            ),
+            'ListEnrollments': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListEnrollments,
+                    request_deserializer=enrollment__pb2.ListEnrollmentsRequest.FromString,
+                    response_serializer=enrollment__pb2.ListEnrollmentsResponse.SerializeToString,
             ),
             'UploadGrade': grpc.unary_unary_rpc_method_handler(
                     servicer.UploadGrade,
@@ -168,6 +185,33 @@ class EnrollmentService(object):
             '/enrollment.EnrollmentService/ViewGrades',
             enrollment__pb2.ViewGradesRequest.SerializeToString,
             enrollment__pb2.ViewGradesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListEnrollments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/enrollment.EnrollmentService/ListEnrollments',
+            enrollment__pb2.ListEnrollmentsRequest.SerializeToString,
+            enrollment__pb2.ListEnrollmentsResponse.FromString,
             options,
             channel_credentials,
             insecure,

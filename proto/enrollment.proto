@@ -39,6 +39,15 @@ message ViewGradesResponse {
   repeated GradeRecord records = 1;
 }
 
+// 3b. List all enrollments (Faculty/admin feature)
+// Returns GradeRecord entries for all students and courses.
+message ListEnrollmentsRequest {
+}
+
+message ListEnrollmentsResponse {
+  repeated GradeRecord records = 1;
+}
+
 // 3. Upload Grade RPC (Faculty feature)
 message UploadGradeRequest {
   string faculty_username = 1; // Used for authorization check
@@ -73,6 +82,9 @@ service EnrollmentService {
   
   // Students to view their previous grades
   rpc ViewGrades (ViewGradesRequest) returns (ViewGradesResponse);
+
+  // Faculty to see all enrollments for grading/overview
+  rpc ListEnrollments (ListEnrollmentsRequest) returns (ListEnrollmentsResponse);
   
   // Faculty to be able to upload grades
   rpc UploadGrade (UploadGradeRequest) returns (UploadGradeResponse);
