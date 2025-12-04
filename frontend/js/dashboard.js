@@ -60,22 +60,31 @@ function setupStudentDashboard() {
 }
 
 async function setupFacultyDashboard() {
-    // Setup upload grade form
+    const studentView = document.getElementById('studentView');
+    const facultyView = document.getElementById('facultyView');
+    if (studentView) studentView.style.display = 'none';
+    if (facultyView) facultyView.style.display = 'block';
+
     const form = document.getElementById('uploadGradeForm');
     const errorMsg = document.getElementById('uploadErrorMessage');
     const successMsg = document.getElementById('uploadSuccessMessage');
+
+    if (!form) {
+        console.error('uploadGradeForm not found');
+        return;
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorMsg.classList.remove('show');
         successMsg.classList.remove('show');
 
-        const enrollmentId = parseInt(document.getElementById('enrollmentId').value);
+        const username = document.getElementById('studentUsername').value.trim();
         const grade = parseFloat(document.getElementById('grade').value);
 
         try {
-            const response = await api.uploadGrade(enrollmentId, grade);
-            successMsg.textContent = `Grade uploaded successfully! Student: ${response.student_username}, Grade: ${response.grade}`;
+            const response = await api.uploadGrade(username, grade);
+            successMsg.textContent = response.message || 'Grade uploaded successfully!';
             successMsg.classList.add('show');
             form.reset();
         } catch (error) {
