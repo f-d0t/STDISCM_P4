@@ -38,6 +38,40 @@ class Course(Base):
 
 Base.metadata.create_all(bind=engine)
 
+
+def init_sample_courses():
+    """Seed the database with a few sample courses if empty."""
+    db = SessionLocal()
+    try:
+        existing_count = db.query(Course).count()
+        if existing_count > 0:
+            print(f"[CourseService] {existing_count} courses already in DB, skipping seeding.")
+            return
+
+        seed_data = [
+            {"code": "CS101", "title": "Introduction to Programming", "slots": 30},
+            {"code": "CS102", "title": "Data Structures",                 "slots": 25},
+            {"code": "CS103", "title": "Database Systems",                "slots": 20},
+            {"code": "CS104", "title": "Computer Networks",               "slots": 20},
+        ]
+
+        for c in seed_data:
+            course = Course(
+                code=c["code"],
+                title=c["title"],
+                slots=c["slots"],
+                is_open=True,
+            )
+            db.add(course)
+
+        db.commit()
+        print(f"[CourseService] Seeded {len(seed_data)} sample courses.")
+    except IntegrityError:
+        db.rollback()
+        print("[CourseService] Seed failed due to IntegrityError (some courses may already exist).")
+    finally:
+        db.close()
+
 # --- gRPC Servicer Implementation ---
 
 # The CourseServicer must inherit from the generated ServiceBase class
@@ -155,6 +189,8 @@ class CourseServicer(course_pb2_grpc.CourseServiceServicer):
 def serve():
     """Starts the gRPC server for the Course Service."""
     # Use a ThreadPoolExecutor to handle concurrent requests
+    init_sample_courses()
+    
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     
     # Add the implemented servicer to the server

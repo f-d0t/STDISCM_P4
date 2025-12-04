@@ -5,64 +5,58 @@
 let currentTab = 'courses';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication
     const authenticated = await requireAuth();
     if (!authenticated) return;
 
-    // Setup UI based on role
     const role = getUserRole();
     const username = getUsername();
-    
     document.getElementById('userInfo').textContent = `${username} (${role})`;
 
     if (role === 'student') {
-        document.getElementById('studentView').style.display = 'block';
         setupStudentDashboard();
     } else if (role === 'faculty') {
-        document.getElementById('facultyView').style.display = 'block';
         setupFacultyDashboard();
     }
 
-    // Setup logout
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         await api.logout();
         window.location.href = 'index.html';
     });
 
-    // Setup tabs
     setupTabs();
 });
+
 
 function setupTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabName = btn.getAttribute('data-tab');
-            
-            // Remove active class from all
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.dataset.tab;
+
             tabButtons.forEach(b => b.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
-            
-            // Add active class to clicked
-            btn.classList.add('active');
-            document.getElementById(`${tabName}Tab`).classList.add('active');
-            
-            currentTab = tabName;
-            
-            // Load data for the tab
-            if (tabName === 'courses' || tabName === 'enroll') {
+
+            button.classList.add('active');
+            document.getElementById(target + 'Tab').classList.add('active');
+
+            if (target === 'courses' || target === 'enroll') {
                 loadCourses();
-            } else if (tabName === 'grades') {
+            } else if (target === 'grades') {
                 loadGrades();
             }
         });
     });
 }
 
-async function setupStudentDashboard() {
-    await loadCourses();
+function setupStudentDashboard() {
+    document.getElementById('studentView').style.display = 'block';
+    document.getElementById('facultyView').style.display = 'none';
+
+    // Load data for student dashboard
+    loadCourses();
+    loadGrades();
 }
 
 async function setupFacultyDashboard() {
@@ -94,12 +88,12 @@ async function setupFacultyDashboard() {
 async function loadCourses() {
     const coursesList = document.getElementById('coursesList');
     const enrollCoursesList = document.getElementById('enrollCoursesList');
-    
+
     if (!coursesList && !enrollCoursesList) return;
 
     try {
         const courses = await api.getCourses();
-        
+
         const renderCourse = (course, showEnrollButton = false) => {
             const card = document.createElement('div');
             card.className = 'course-card';
@@ -112,13 +106,14 @@ async function loadCourses() {
                     </div>
                     <div>Status: ${course.is_open ? 'Open' : 'Closed'}</div>
                 </div>
-                ${showEnrollButton && course.is_open && course.slots > 0 ? 
-                    `<button class="btn btn-enroll" onclick="enrollInCourse(${course.id})">Enroll</button>` : 
-                    ''}
+                ${showEnrollButton && course.is_open && course.slots > 0
+                    ? `<button class="btn btn-enroll" onclick="enrollInCourse(${course.id})">Enroll</button>`
+                    : ''}
             `;
             return card;
         };
 
+        // "Available Courses" tab
         if (coursesList) {
             coursesList.innerHTML = '';
             courses.forEach(course => {
@@ -126,6 +121,7 @@ async function loadCourses() {
             });
         }
 
+        // "Enroll in Course" tab
         if (enrollCoursesList) {
             enrollCoursesList.innerHTML = '';
             courses.forEach(course => {
@@ -136,7 +132,9 @@ async function loadCourses() {
         console.error('Failed to load courses:', error);
         const container = coursesList || enrollCoursesList;
         if (container) {
-            container.innerHTML = `<div class="error-message show">Failed to load courses: ${error.message}</div>`;
+            container.innerHTML = `<div class="error-message show">
+                Failed to load courses: ${error.message}
+            </div>`;
         }
     }
 }
